@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 import PIL
 import os
 import matplotlib.pyplot as plt
-from networks.affinity_feature import AffinityFeature
+from .affinity_feature import AffinityFeature
 
 
 def convbn(in_planes, out_planes, kernel_size, stride, pad, dilation):

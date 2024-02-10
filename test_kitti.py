@@ -3,15 +3,12 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 import os
-from tqdm import tqdm, trange
+from tqdm import trange
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
 
 from dataloader import KITTIloader as kt
 from networks.stackhourglass import PSMNet
-import loss_functions as lf
-
 
 parser = argparse.ArgumentParser(description='LaC')
 parser.add_argument('--no_cuda', action='store_true', default=False)

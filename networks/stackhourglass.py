@@ -5,11 +5,11 @@ import torch.utils.data
 from torch.autograd import Variable
 import torch.nn.functional as F
 import math
-from networks.submodule import convbn_3d, feature_extraction, DisparityRegression
-from networks.deformable_refine import DeformableRefine, DeformableRefineF
+from .submodule import convbn_3d, feature_extraction, DisparityRegression
+from .deformable_refine import DeformableRefine, DeformableRefineF
 import loss_functions as lf
 import matplotlib.pyplot as plt
-from networks.refinement import StereoDRNetRefinement
+from .refinement import StereoDRNetRefinement
 
 
 class hourglass(nn.Module):

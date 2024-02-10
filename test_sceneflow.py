@@ -2,19 +2,14 @@ import argparse
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from tqdm import tqdm, trange
+from tqdm import trange
 import os
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
-import skimage.io
-import cv2
 
 from dataloader import sceneflow_loader as sf
 from dataloader import readpfm as rp
 from networks.stackhourglass import PSMNet
-import loss_functions as lf
-
 
 parser = argparse.ArgumentParser(description='LaC')
 parser.add_argument('--no_cuda', action='store_true', default=False)

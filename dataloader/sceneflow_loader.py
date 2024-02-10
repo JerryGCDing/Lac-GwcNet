@@ -1,6 +1,6 @@
 import os
 from PIL import Image
-from dataloader import readpfm as rp
+import readpfm as rp
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import numpy as np

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from networks.U_net import U_Net, U_Net_F, U_Net_F_v2
+from .U_net import U_Net, U_Net_F, U_Net_F_v2
 
 
 class OffsetConv(nn.Module):

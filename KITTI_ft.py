@@ -2,17 +2,12 @@ import argparse
 import torch
 import torch.utils.data as data
 import torch.optim as optim
-import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 import os
 from tqdm import tqdm
-from collections import OrderedDict
 from dataloader import KITTIloader as kt
-from dataloader import KITTI2012loader as kt2012
 from networks.stackhourglass import PSMNet
-import loss_functions as lf
-
 
 parser = argparse.ArgumentParser(description='LaC')
 parser.add_argument('--no_cuda', action='store_true', default=False)
