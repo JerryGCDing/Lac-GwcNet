@@ -132,11 +132,12 @@ def main():
         total_test_loss = 0
         adjust_learning_rate(optimizer, epoch)
 
-        # for batch_id, (imgL, imgR, disp_L) in enumerate(tqdm(trainLoader)):
-        #     train_loss = train(imgL, imgR, disp_L)
-        #     total_train_loss += train_loss
-        # avg_train_loss = total_train_loss / len(trainLoader)
-        # print('Epoch %d average training loss = %.3f' % (epoch, avg_train_loss))
+        for batch_id, sample in enumerate(tqdm(trainLoader)):
+            imgL, imgR, disp_L = sample['left'], sample['right'], sample['disparity']
+            train_loss = train(imgL, imgR, disp_L)
+            total_train_loss += train_loss
+        avg_train_loss = total_train_loss / len(trainLoader)
+        print('Epoch %d average training loss = %.3f' % (epoch, avg_train_loss))
 
         for batch_id, sample in enumerate(tqdm(testLoader)):
             imgL, imgR, disp_L = sample['left'], sample['right'], sample['disparity']
