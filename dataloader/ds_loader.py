@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 from PIL import Image
 import os
 
-from data_io import get_transform, read_all_lines
+from .data_io import get_transform, read_all_lines
 
 
 class DSDataset(Dataset):

@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import math
 from .submodule import convbn_3d, feature_extraction, DisparityRegression
 from .deformable_refine import DeformableRefine, DeformableRefineF
-import loss_functions as lf
+from .loss_functions import *
 import matplotlib.pyplot as plt
 from .refinement import StereoDRNetRefinement
 
@@ -221,14 +221,14 @@ class PSMNet(nn.Module):
                     F.smooth_l1_loss(pred3[mask], gt_left[mask])
 
             if self.udc:
-                gt_distribute = lf.disp2distribute(gt_left, self.maxdisp, b=2)
-                loss2 = 0.5 * lf.CEloss(gt_left, self.maxdisp, gt_distribute, distribute1) + \
-                        0.7 * lf.CEloss(gt_left, self.maxdisp, gt_distribute, distribute2) + \
-                        lf.CEloss(gt_left, self.maxdisp, gt_distribute, distribute3)
+                gt_distribute = disp2distribute(gt_left, self.maxdisp, b=2)
+                loss2 = 0.5 * CEloss(gt_left, self.maxdisp, gt_distribute, distribute1) + \
+                        0.7 * CEloss(gt_left, self.maxdisp, gt_distribute, distribute2) + \
+                        CEloss(gt_left, self.maxdisp, gt_distribute, distribute3)
 
                 if self.refine:
                     loss1 += F.smooth_l1_loss(predr[mask], gt_left[mask])
-                    loss2 += lf.CEloss(gt_left, self.maxdisp, gt_distribute, distributer)
+                    loss2 += CEloss(gt_left, self.maxdisp, gt_distribute, distributer)
             else:
                 loss2 = loss1
 
