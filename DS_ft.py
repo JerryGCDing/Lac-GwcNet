@@ -146,15 +146,14 @@ def main():
         avg_test_loss = total_test_loss / len(testLoader)
         print('Epoch %d total test loss = %.3f' % (epoch, avg_test_loss))
 
-        if epoch % 50 == 0:
-            state = {'net': model.state_dict(),
-                     'optimizer': optimizer.state_dict(),
-                     'epoch': epoch}
+        state = {'net': model.state_dict(),
+                 'optimizer': optimizer.state_dict(),
+                 'epoch': epoch}
 
-            if not os.path.exists(args.save_path):
-                os.mkdir(args.save_path)
-            save_model_path = args.save_path + 'checkpoint_{}.ckpt'.format(epoch)
-            torch.save(state, save_model_path)
+        if not os.path.exists(args.save_path):
+            os.mkdir(args.save_path)
+        save_model_path = args.save_path + 'checkpoint_{}.ckpt'.format(epoch)
+        torch.save(state, save_model_path)
 
         torch.cuda.empty_cache()
 
