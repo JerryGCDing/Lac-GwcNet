@@ -5,8 +5,8 @@ from PIL import Image
 import os
 import warnings
 
-from data_io import get_transform, read_all_lines
-from wrappers import Camera, Pose
+from .data_io import get_transform, read_all_lines
+from .wrappers import Camera, Pose
 
 
 def ref_points_generator(start, shape, voxel_size, normalize=True):

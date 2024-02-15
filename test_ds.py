@@ -1,5 +1,4 @@
 import coloredlogs
-import hydra
 import logging
 import torch.backends.cudnn as cudnn
 import torch.cuda
@@ -103,7 +102,7 @@ def eval_metric(voxel_ests, voxel_gt, metric_func, *args, depth_range=None):
 
 
 test_dataset = VoxelDSDatasetCalib(args.data_path,
-                                   '/work/vig/tianyed/Lac-GwcNet/Lac-GwcNet/filenames/DS_test.txt',
+                                   './filenames/DS_test_gt_calib.txt',
                                    False,
                                    [-8, 10, -3, 3, 0, 30],
                                    [3, 1.5, 0.75, 0.375])
@@ -137,7 +136,7 @@ def eval_model():
     if torch.cuda.is_available():
         model.cuda()
 
-    state_dict = torch.load('/scratch/ding.tian/logs_ddp/ACVNet/checkpoint_000014.ckpt')['model']
+    state_dict = torch.load(args.load_path)['net']
     new_state_dict = {}
     for k, v in state_dict.items():
         k = k[7:]
