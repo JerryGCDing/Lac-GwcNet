@@ -41,6 +41,8 @@ def ref_points_generator(start, shape, voxel_size, normalize=True):
         coords[..., 2] = (coords[..., 2] - torch.min(coords[..., 2])) / (
                 torch.max(coords[..., 2]) - torch.min(coords[..., 2]) + 1e-30)
 
+    return coords
+
 
 class DSDataset(Dataset):
     def __init__(self, datapath, list_filename, training, transform=True):
