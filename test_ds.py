@@ -159,7 +159,7 @@ def eval_model():
 
         start = time.time()
         with torch.no_grad():
-            disp_est = model(imgL, imgR)[-1].squeeze().cpu().numpy()
+            disp_est = model(imgL, imgR, torch.zeros_like(imgL).cuda()).squeeze().cpu().numpy()
             assert len(disp_est.shape) == 2
             disp_est[disp_est <= 0] -= 1.
 
@@ -225,7 +225,7 @@ def eval_ops():
         imgL = imgL.cuda()
         imgR = imgR.cuda()
     with torch.no_grad():
-        macs, params = clever_format(profile(model, inputs=(imgL, imgR)), '%.3f')
+        macs, params = clever_format(profile(model, inputs=(imgL, imgR, torch.zeros_like(imgL).cuda())), '%.3f')
 
     print(f'MACS: {macs}, PARAMS: {params}')
 
