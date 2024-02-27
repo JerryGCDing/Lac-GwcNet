@@ -36,7 +36,7 @@ def main():
     model.load_state_dict(new_state_dict, strict=True)
     model.eval()
 
-    for idx in [1000, 1500, 2000]:
+    for idx in [1000, 1500, 2500]:
         file_id = os.path.split(sample_dataset[idx]['left_filename'])[-1].split('.')[0]
 
         imgL = sample_dataset[idx]['left'][None, ...]
