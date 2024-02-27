@@ -55,7 +55,7 @@ def main():
             imgR = imgR.cuda()
 
         with torch.no_grad():
-            disp_est = model(imgL, imgR)[-1].squeeze().cpu().numpy()
+            disp_est = model(imgL, imgR, torch.zeros_like(imgL).cuda()).squeeze().cpu().numpy()
             assert len(disp_est.shape) == 2
             disp_est[disp_est <= 0] -= 1.
 
