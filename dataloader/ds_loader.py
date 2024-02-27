@@ -420,10 +420,10 @@ class VoxelDSDatasetCalib(Dataset):
 
         left_top = np.repeat(np.array([left_top]), repeats=2, axis=0)
 
-        # canvas = np.zeros((400, 880, 3), dtype=np.float32)
-        # left_img_ = np.asarray(left_img_)
-        # canvas[:left_img_.shape[0], :left_img_.shape[1], :] = left_img_
-        colored_cloud_gt = self.calc_cloud(depth_gt)  # , left_img=canvas)
+        canvas = np.zeros((400, 880, 3), dtype=np.float32)
+        left_img_ = np.asarray(left_img_)
+        canvas[:left_img_.shape[0], :left_img_.shape[1], :] = left_img_
+        colored_cloud_gt = self.calc_cloud(depth_gt, left_img=canvas)
         filtered_cloud_gt = self.filter_cloud(colored_cloud_gt[..., :3])
 
         if self.stored_gt:
