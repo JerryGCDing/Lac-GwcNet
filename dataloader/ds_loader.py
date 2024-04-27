@@ -7,48 +7,13 @@ import warnings
 
 from .data_io import get_transform, read_all_lines
 from .wrappers import Camera, Pose
-
-
-def ref_points_generator(start, shape, voxel_size, normalize=True):
-    min_x, min_y, min_z = start
-    x_range = torch.arange(shape[0], dtype=torch.float) * voxel_size + voxel_size / 2 + min_x
-    y_range = torch.arange(shape[1], dtype=torch.float) * voxel_size + voxel_size / 2 + min_y
-    z_range = torch.arange(shape[2], dtype=torch.float) * voxel_size + voxel_size / 2 + min_z
-
-    W, H, D = x_range.shape[0], y_range.shape[0], z_range.shape[0]
-    # import pdb; pdb.set_trace()
-
-    grid_x = x_range.view(-1, 1, 1).repeat(1, H, D)
-    grid_y = y_range.view(1, -1, 1).repeat(W, 1, D)
-    grid_z = z_range.view(1, 1, -1).repeat(W, H, 1)
-
-    # grid_x = grid_x.view(1, 1, W, H, D)
-    # grid_y = grid_y.view(1, 1, W, H, D)
-    # grid_z = grid_z.view(1, 1, W, H, D)
-
-    coords = torch.stack((grid_x, grid_y, grid_z), 3).float()  # [B,Coords=3,W,H,D]
-
-    # # D, H, W
-    # meshgrid = torch.meshgrid(min_z + z_range, min_y + y_range, min_x + x_range, indexing='ij')
-    # z_coords, y_coords, x_coords = meshgrid
-    # coords = torch.stack([x_coords, y_coords, z_coords], dim=-1)
-
-    if normalize:
-        coords[..., 0] = (coords[..., 0] - torch.min(coords[..., 0])) / (
-                torch.max(coords[..., 0]) - torch.min(coords[..., 0]) + 1e-30)
-        coords[..., 1] = (coords[..., 1] - torch.min(coords[..., 1])) / (
-                torch.max(coords[..., 1]) - torch.min(coords[..., 1]) + 1e-30)
-        coords[..., 2] = (coords[..., 2] - torch.min(coords[..., 2])) / (
-                torch.max(coords[..., 2]) - torch.min(coords[..., 2]) + 1e-30)
-
-    return coords
+from .voxel_dataset import ref_points_generator, VoxelDataset
 
 
 class DSDataset(Dataset):
     def __init__(self, datapath, list_filename, training, transform=True):
         self.datapath = datapath
-        self.left_filenames, self.right_filenames, self.disp_filenames = self.load_path(
-            list_filename)
+        self.left_filenames, self.right_filenames, self.disp_filenames = self.load_path(list_filename)
         self.training = training
         if self.training:
             assert self.disp_filenames is not None
@@ -122,45 +87,17 @@ class DSDataset(Dataset):
                 "left_filename": self.left_filenames[index]}
 
 
-class VoxelDSDatasetCalib(Dataset):
+class VoxelDSDatasetCalib(VoxelDataset):
     def __init__(self, datapath, list_filename, training, roi_scale, voxel_sizes, transform=True, *,
-                 filter_ground=True):
-        self.datapath = datapath
-        # pre-computed gt label
-        self.stored_gt = False
+                 filter_ground=True, color_jitter=False, occupied_gates=(20, 20, 20, 10)):
+        super().__init__(datapath, roi_scale, voxel_sizes, transform, filter_ground=filter_ground,
+                         color_jitter=color_jitter, occupied_gates=occupied_gates)
         self.left_filenames, self.right_filenames, self.depth_filenames, self.gt_filenames, self.calib_filenames = \
             self.load_path(list_filename)
-        self.training = training
-        if self.training:
+        if training:
             assert self.depth_filenames is not None
 
-        # Camera intrinsics
-        # initialize as null
-        self.c_u = None
-        self.c_v = None
-        self.f_u = None
-        self.f_v = None
-        self.lidar_extrinsic = None
-        self.roi_scale = roi_scale  # [min_x, max_x, min_y, max_y, min_z, max_z]
-        assert len(voxel_sizes) == 4, 'Incomplete voxel sizes for 4 levels.'
-        self.voxel_sizes = voxel_sizes
-
-        self.grid_sizes = []
-        for voxel_size in self.voxel_sizes:
-            range_x = self.roi_scale[1] - self.roi_scale[0]
-            range_y = self.roi_scale[3] - self.roi_scale[2]
-            range_z = self.roi_scale[5] - self.roi_scale[4]
-            if range_x % voxel_size != 0 or range_y % voxel_size != 0 or range_z % voxel_size != 0:
-                raise RuntimeError('Voxel volume range indivisible by voxel sizes.')
-
-            grid_size_x = int(range_x // voxel_size)
-            grid_size_y = int(range_y // voxel_size)
-            grid_size_z = int(range_z // voxel_size)
-            self.grid_sizes.append((grid_size_x, grid_size_y, grid_size_z))
-
-        self.transform = transform
-        # if ground y > 1 will be filtered
-        self.filter_ground = filter_ground
+        self.ground_y = 1
 
     def load_path(self, list_filename):
         lines = read_all_lines(list_filename)
@@ -187,20 +124,6 @@ class VoxelDSDatasetCalib(Dataset):
             return left_images, right_images, depth_map, gt_label, calib
         else:
             raise RuntimeError('Dataset filename format not supported.')
-
-    @staticmethod
-    def load_image(filename):
-        return Image.open(filename).convert('RGB')
-
-    @staticmethod
-    def load_depth(filename):
-        data = Image.open(filename)
-        data = np.array(data, dtype=np.float32) / 256.
-        return data
-
-    @staticmethod
-    def load_gt(filename):
-        return torch.load(filename)
 
     def load_calib(self, filename):
         with open(filename, 'r') as f:
@@ -300,22 +223,6 @@ class VoxelDSDatasetCalib(Dataset):
         # return ref_volume | ref_mask
         return ref_mask
 
-    def project_image_to_rect(self, uv_depth):
-        ''' Input: nx3 first two channels are uv, 3rd channel
-                is depth in rect camera coord.
-            Output: nx3 points in rect camera coord.
-        '''
-        x = (uv_depth[:, 0] - self.c_u) * uv_depth[:, 2] / self.f_u
-        y = (uv_depth[:, 1] - self.c_v) * uv_depth[:, 2] / self.f_v
-        pts_3d_rect = np.zeros_like(uv_depth)
-        pts_3d_rect[:, 0] = x
-        pts_3d_rect[:, 1] = y
-        pts_3d_rect[:, 2:] = uv_depth[:, 2:]
-        return pts_3d_rect
-
-    def project_image_to_velo(self, uv_depth):
-        return self.lidar_extrinsic.inverse().transform(self.project_image_to_rect(uv_depth)).numpy()
-
     def calc_cloud(self, depth, left_img=None):
         mask = (depth > 0).reshape(-1)
         rows, cols = depth.shape
@@ -329,40 +236,6 @@ class VoxelDSDatasetCalib(Dataset):
             return np.concatenate([cloud, left_img[mask]], axis=-1)
 
         return cloud
-
-    def filter_cloud(self, cloud):
-        min_mask = cloud >= [self.roi_scale[0], self.roi_scale[2], self.roi_scale[4]]
-        if self.filter_ground and self.roi_scale[3] > 1:
-            max_mask = cloud <= [self.roi_scale[1], 1, self.roi_scale[5]]
-        else:
-            max_mask = cloud <= [self.roi_scale[1], self.roi_scale[3], self.roi_scale[5]]
-        min_mask = min_mask[:, 0] & min_mask[:, 1] & min_mask[:, 2]
-        max_mask = max_mask[:, 0] & max_mask[:, 1] & max_mask[:, 2]
-        filter_mask = min_mask & max_mask
-        filtered_cloud = cloud[filter_mask]
-        return filtered_cloud
-
-    def calc_voxel_grid(self, filtered_cloud, level, parent_grid=None, occupied_gate=20):
-        assert occupied_gate > 0
-
-        vox_size = self.voxel_sizes[level]
-        reference_points = ref_points_generator([self.roi_scale[0], self.roi_scale[2], self.roi_scale[4]],
-                                                self.grid_sizes[level], vox_size, normalize=False).view(-1, 3).numpy()
-
-        if parent_grid is not None:
-            search_mask = parent_grid[:, None, :, None, :, None].repeat(1, 2, 1, 2, 1, 2).view(-1).to(
-                bool).numpy()
-        else:
-            search_mask = torch.ones(reference_points.shape[0]).to(bool)
-
-        vox_hits = np.bitwise_and.reduce(
-            np.abs(filtered_cloud[..., None, :] - reference_points[search_mask]) <= vox_size / 2,
-            axis=-1)
-        vox_hits = np.sum(vox_hits, axis=0) >= occupied_gate
-        occupied_grid = np.zeros(reference_points.shape[0])
-        occupied_grid[search_mask] = vox_hits.astype(int)
-
-        return occupied_grid.reshape(*self.grid_sizes[level]), reference_points[occupied_grid.astype(bool)]
 
     def __len__(self):
         return len(self.left_filenames)
@@ -420,10 +293,10 @@ class VoxelDSDatasetCalib(Dataset):
 
         left_top = np.repeat(np.array([left_top]), repeats=2, axis=0)
 
-        canvas = np.zeros((400, 880, 3), dtype=np.float32)
-        left_img_ = np.asarray(left_img_)
-        canvas[:left_img_.shape[0], :left_img_.shape[1], :] = left_img_
-        colored_cloud_gt = self.calc_cloud(depth_gt, left_img=canvas)
+        # canvas = np.zeros((400, 880, 3), dtype=np.float32)
+        # left_img_ = np.asarray(left_img_)
+        # canvas[:left_img_.shape[0], :left_img_.shape[1], :] = left_img_
+        colored_cloud_gt = self.calc_cloud(depth_gt)  # , left_img=canvas)
         filtered_cloud_gt = self.filter_cloud(colored_cloud_gt[..., :3])
 
         if self.stored_gt:
@@ -465,10 +338,10 @@ class VoxelDSDatasetCalib(Dataset):
                 'cam_101': cam_101,
                 'T_world_cam_103': T_world_cam_103,
                 'cam_103': cam_103,
-                "depth": depth_gt,
+                # "depth": depth_gt,
                 "voxel_grid": all_vox_grid_gt,
-                'point_cloud': colored_cloud_gt.astype(np.float32).tobytes(),
-                'filtered_point_cloud': filtered_cloud_gt.astype(np.float32).tobytes(),
-                'ref_masks': ref_masks,
+                'point_cloud': filtered_cloud_gt.astype(np.float32).tobytes(),
+                # 'colored_point_cloud': colored_cloud_gt.astype(np.float32).tobytes(),
+                # 'ref_masks': ref_masks,
                 'left_top': left_top,
                 "left_filename": self.left_filenames[index]}
