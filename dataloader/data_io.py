@@ -63,5 +63,5 @@ def readPFM(file):
     shape = (height, width, 3) if color else (height, width)
 
     data = np.reshape(data, shape)
-    data = np.flipud(data)
+    data = np.flipud(data).copy()
     return data, scale

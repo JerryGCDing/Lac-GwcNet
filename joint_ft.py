@@ -86,7 +86,7 @@ ds_test_dataset = DSDataset('/work/vig/Datasets/DrivingStereo/',
 driving_test_dataset = DrivingDataset('/work/vig/Datasets/SyntheticDriving/',
                                       '/work/vig/tianyed/Lac-GwcNet/Lac-GwcNet/filenames/Driving_vox_test.txt', False)
 kitti_test_dataset = KITTIDataset('/work/vig/Datasets/KITTI_VoxelFlow/',
-                                  '/work/vig/tianyed/Lac-GwcNet/Lac-GwcNet/filenames/KITTI_vox_test.txt', False)
+                                  '/work/vig/tianyed/Lac-GwcNet/Lac-GwcNet/filenames/KITTI_vox_valid.txt', False)
 
 ds_trainLoader = torch.utils.data.DataLoader(ds_train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16,
                                              drop_last=True)
